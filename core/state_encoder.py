@@ -52,21 +52,28 @@ def encode_state(cube):
     return encode_facelet_string(facelet_str)
 
 
+# Pre-calculate mapping for vectorized encoding
+_CHAR_MAP = np.zeros(256, dtype=np.int32)
+for ch, color in CHAR_TO_COLOR.items():
+    _CHAR_MAP[ord(ch)] = COLOR_TO_INDEX[color]
+
 def encode_facelet_string(facelet_str):
     """
     Encode a 54-character Kociemba facelet string as a one-hot vector.
-
-    Args:
-        facelet_str: 54-character string using U, R, F, D, L, B.
-
-    Returns:
-        numpy array of shape (324,) with dtype float32.
+    Uses vectorized NumPy for high performance.
     """
-    vec = np.zeros(ENCODING_DIM, dtype=np.float32)
-    for i, ch in enumerate(facelet_str):
-        color = CHAR_TO_COLOR[ch]
-        vec[i * NUM_COLORS + COLOR_TO_INDEX[color]] = 1.0
-    return vec
+    # Convert string to byte array of ASCII values
+    chars = np.frombuffer(facelet_str.encode('ascii'), dtype=np.uint8)
+    
+    # Map characters to color indices (0-5)
+    color_indices = _CHAR_MAP[chars]
+    
+    # Create one-hot matrix (54, 6)
+    one_hot = np.zeros((NUM_FACELETS, NUM_COLORS), dtype=np.float32)
+    one_hot[np.arange(NUM_FACELETS), color_indices] = 1.0
+    
+    # Flatten to (324,)
+    return one_hot.ravel()
 
 
 def decode_state(vec):
