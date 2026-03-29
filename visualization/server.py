@@ -266,12 +266,20 @@ class CubeHandler(SimpleHTTPRequestHandler):
         pass
 
 
-def start_server(port=8080):
+def start_server(port=None):
     """Start the visualization server."""
-    load_ai_model()
-    server = HTTPServer(('localhost', port), CubeHandler)
+    if port is None:
+        port = int(os.environ.get("PORT", 8080))
+    host = os.environ.get("HOST", "0.0.0.0")
+
+    # Instantiate server first to bind the port immediately for Render/cloud platforms
+    server = HTTPServer((host, port), CubeHandler)
     print(f"Rubik's Cube 3D Visualization Server")
-    print(f"Open http://localhost:{port} in your browser")
+    print(f"Listening on http://{host}:{port}")
+    
+    # Load AI model after the port is open to avoid timeout during torch initialization
+    load_ai_model()
+    
     print(f"Press Ctrl+C to stop")
     try:
         server.serve_forever()
@@ -283,6 +291,6 @@ def start_server(port=8080):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Rubik's Cube visualization server")
-    parser.add_argument("--port", type=int, default=8080, help="Server port")
+    parser.add_argument("--port", type=int, help="Server port (overrides PORT env var)")
     args = parser.parse_args()
     start_server(port=args.port)
