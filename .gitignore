@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+nosetests.xml
+reproduce.pickle
+
+# Data & Models
+data/datasets/*.npz
+!data/datasets/.gitkeep
+# data/models/*.pt  # Uncomment if you want to exclude all models
+# !data/models/ai_solver.pt # Specifically track the main model if desired
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db

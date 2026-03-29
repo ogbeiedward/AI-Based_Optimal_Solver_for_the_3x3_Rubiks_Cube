@@ -1,0 +1,708 @@
+<!--
+HUMAN-READABLE DESCRIPTION:
+This is the highly interactive Three.js web frontend. It simulates true real-world physics, rigidly animating the mathematical arrays supplied by the backend into a stunning 3D model.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube 3D Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: #0a0a1a;
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+
+        #canvas-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #sidebar {
+            width: 320px;
+            background: rgba(15, 15, 35, 0.95);
+            border-left: 1px solid rgba(100, 100, 255, 0.15);
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a0a0ff;
+            text-align: center;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.2);
+        }
+
+        h2 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8080cc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+
+        .btn {
+            padding: 8px 4px;
+            border: 1px solid rgba(100, 100, 255, 0.25);
+            background: rgba(30, 30, 60, 0.8);
+            color: #c0c0ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: 'Consolas', 'Courier New', monospace;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: rgba(60, 60, 120, 0.9);
+            border-color: rgba(130, 130, 255, 0.5);
+            color: #ffffff;
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-action {
+            grid-column: span 3;
+            padding: 10px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-size: 14px;
+        }
+
+        .btn-action.primary {
+            background: rgba(40, 40, 120, 0.8);
+            border-color: rgba(100, 100, 255, 0.4);
+        }
+
+        .btn-action.primary:hover {
+            background: rgba(60, 60, 160, 0.9);
+        }
+
+        .btn-action.danger {
+            background: rgba(120, 30, 30, 0.6);
+            border-color: rgba(255, 80, 80, 0.3);
+            color: #ff9090;
+        }
+
+        .btn-action.danger:hover {
+            background: rgba(160, 40, 40, 0.8);
+        }
+
+        .btn-action.success {
+            background: rgba(20, 100, 40, 0.6);
+            border-color: rgba(80, 255, 120, 0.3);
+            color: #80ff90;
+        }
+
+        .btn-action.success:hover {
+            background: rgba(30, 140, 60, 0.8);
+        }
+
+        #status {
+            font-size: 12px;
+            padding: 10px;
+            background: rgba(20, 20, 50, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(100, 100, 255, 0.1);
+            line-height: 1.6;
+        }
+
+        #status .label {
+            color: #6060aa;
+            font-weight: 600;
+        }
+
+        #status .value {
+            color: #c0c0ff;
+        }
+
+        #status .solved {
+            color: #50ff70;
+            font-weight: 700;
+        }
+
+        #status .unsolved {
+            color: #ff6060;
+        }
+
+        #move-log {
+            font-size: 11px;
+            padding: 8px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(100, 100, 255, 0.1);
+            max-height: 80px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            color: #8080aa;
+            word-break: break-all;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #solution-output {
+            font-size: 12px;
+            padding: 8px;
+            background: rgba(10, 10, 30, 0.8);
+            border-radius: 6px;
+            border: 1px solid rgba(80, 255, 120, 0.15);
+            color: #80ff90;
+            font-family: 'Consolas', monospace;
+            min-height: 30px;
+            word-break: break-all;
+        }
+
+        .face-label {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            text-align: center;
+            line-height: 18px;
+            font-size: 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            margin-right: 2px;
+        }
+
+        /* Benchmark Table Styles */
+        .benchmark-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            margin-top: 10px;
+            background: rgba(10, 10, 30, 0.6);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .benchmark-table th, .benchmark-table td {
+            padding: 6px 4px;
+            text-align: right;
+            border-bottom: 1px solid rgba(100, 100, 255, 0.1);
+        }
+
+        .benchmark-table th {
+            background: rgba(40, 40, 100, 0.5);
+            color: #88ccff;
+            font-weight: 600;
+        }
+
+        .benchmark-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .benchmark-table td:first-child, .benchmark-table th:first-child {
+            text-align: left;
+            padding-left: 8px;
+        }
+
+        .highlight-ai {
+            color: #ff80ff;
+        }
+
+        .highlight-koc {
+            color: #50ff70;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-wrapper"></div>
+        <div id="sidebar">
+            <h1>Rubik's Cube 3D</h1>
+
+            <div class="section">
+                <h2>Face Moves</h2>
+                <div class="btn-group" id="move-buttons"></div>
+            </div>
+
+            <div class="section">
+                <h2>Actions</h2>
+                <div class="btn-group">
+                    <button class="btn btn-action primary" onclick="doScramble()">Scramble</button>
+                    <button class="btn btn-action danger" onclick="doReset()">Reset</button>
+                </div>
+                <div class="btn-group" style="margin-top: 4px;">
+                    <button class="btn btn-action success" style="grid-column: span 1.5;" onclick="doSolve()">Solve (Expert)</button>
+                    <button class="btn btn-action primary" style="grid-column: span 1.5; background: rgba(100, 40, 120, 0.6); border-color: rgba(200, 100, 255, 0.3);" onclick="doSolveAI()">Solve (AI)</button>
+                </div>
+                <button class="btn btn-action" style="margin-top: 4px; background: rgba(60, 60, 80, 0.5);" onclick="doCompareBenchmark()">Run Benchmark Comparison</button>
+            </div>
+
+            <div class="section">
+                <h2>Status</h2>
+                <div id="status">
+                    <span class="label">State:</span> <span id="state-val" class="value">Loading...</span><br>
+                    <span class="label">Legal:</span> <span id="legal-val" class="value">-</span><br>
+                    <span class="label">Corners:</span> <span id="corners-val" class="value">-</span><br>
+                    <span class="label">Edges:</span> <span id="edges-val" class="value">-</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Solution</h2>
+                <div id="solution-output">No solution yet.</div>
+            </div>
+
+            <div class="section">
+                <h2>Move History</h2>
+                <div id="move-log">No moves applied.</div>
+            </div>
+
+            <div id="benchmark-section" class="section" style="display: none;">
+                <h2>Benchmark Results (5 tests/depth)</h2>
+                <div id="benchmark-output"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ---------------------------------------------------------------
+        // Three.js Scene Setup
+        // ---------------------------------------------------------------
+        const wrapper = document.getElementById('canvas-wrapper');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+
+        const camera = new THREE.PerspectiveCamera(45, wrapper.clientWidth / wrapper.clientHeight, 0.1, 100);
+        camera.position.set(5, 4, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        wrapper.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 4;
+        controls.maxDistance = 15;
+
+        // Lights
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8)); // Brighter neutral ambient light
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.6); // Slightly softer directional to balance
+        dirLight.position.set(5, 8, 5);
+        scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0xa0a0ff, 0.4);
+        fillLight.position.set(-5, -3, -5);
+        scene.add(fillLight);
+
+        // ---------------------------------------------------------------
+        // Constants & Data
+        // ---------------------------------------------------------------
+        const COLORS = {
+            'U': 0xFFFFFF, 'R': 0xFF0000, 'F': 0x00FF00,
+            'D': 0xFFFF00, 'L': 0xFF8000, 'B': 0x0000FF
+        };
+        const INTERNAL_COLOR = 0x111111;
+        const CUBIE_SIZE = 0.95;
+
+        // Origin positions aligned to backend logical names
+        const CORNER_POS = [
+            new THREE.Vector3( 1, 1, 1), new THREE.Vector3(-1, 1, 1),
+            new THREE.Vector3(-1, 1,-1), new THREE.Vector3( 1, 1,-1),
+            new THREE.Vector3( 1,-1, 1), new THREE.Vector3(-1,-1, 1),
+            new THREE.Vector3(-1,-1,-1), new THREE.Vector3( 1,-1,-1)
+        ];
+        const CORNER_COLORS = [
+            ['U','R','F'], ['U','F','L'], ['U','L','B'], ['U','B','R'],
+            ['D','F','R'], ['D','L','F'], ['D','B','L'], ['D','R','B']
+        ];
+
+        const EDGE_POS = [
+            new THREE.Vector3( 1, 1, 0), new THREE.Vector3( 0, 1, 1),
+            new THREE.Vector3(-1, 1, 0), new THREE.Vector3( 0, 1,-1),
+            new THREE.Vector3( 1,-1, 0), new THREE.Vector3( 0,-1, 1),
+            new THREE.Vector3(-1,-1, 0), new THREE.Vector3( 0,-1,-1),
+            new THREE.Vector3( 1, 0, 1), new THREE.Vector3(-1, 0, 1),
+            new THREE.Vector3(-1, 0,-1), new THREE.Vector3( 1, 0,-1)
+        ];
+        const EDGE_COLORS = [
+            ['U','R'], ['U','F'], ['U','L'], ['U','B'],
+            ['D','R'], ['D','F'], ['D','L'], ['D','B'],
+            ['F','R'], ['F','L'], ['B','L'], ['B','R']
+        ];
+
+        const CENTER_POS = [
+            new THREE.Vector3( 0, 1, 0), new THREE.Vector3( 1, 0, 0),
+            new THREE.Vector3( 0, 0, 1), new THREE.Vector3( 0,-1, 0),
+            new THREE.Vector3(-1, 0, 0), new THREE.Vector3( 0, 0,-1)
+        ];
+        const CENTER_COLORS = [['U'], ['R'], ['F'], ['D'], ['L'], ['B']];
+
+        // Normal mapping for logical rotation derivation
+        const FACE_MAP = {
+            'U': new THREE.Vector3(0, 1, 0), 'D': new THREE.Vector3(0, -1, 0),
+            'R': new THREE.Vector3(1, 0, 0), 'L': new THREE.Vector3(-1, 0, 0),
+            'F': new THREE.Vector3(0, 0, 1), 'B': new THREE.Vector3(0, 0, -1)
+        };
+        const getNormals = (type, id) => (type === 'corner' ? CORNER_COLORS[id] : EDGE_COLORS[id]).map(c => FACE_MAP[c]);
+
+        // Precompute the cubic symmetry group (24 quaternions)
+        const Q24 = [];
+        [0, 1, 2, 3].forEach(x => [0, 1, 2, 3].forEach(y => [0, 1, 2, 3].forEach(z => {
+            const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(x*Math.PI/2, y*Math.PI/2, z*Math.PI/2));
+            if(!Q24.some(oq => Math.abs(q.dot(oq)) > 0.99)) Q24.push(q);
+        })));
+
+        // ---------------------------------------------------------------
+        // Cubie Generation
+        // ---------------------------------------------------------------
+        const cubeGroup = new THREE.Group();
+        scene.add(cubeGroup);
+        const pivot = new THREE.Group();
+        scene.add(pivot);
+
+        const corners = [], edges = [], centers = [];
+
+        function createRigidCubie(pos, colorList) {
+            const group = new THREE.Group();
+            group.position.copy(pos);
+            
+            const baseMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(CUBIE_SIZE, CUBIE_SIZE, CUBIE_SIZE), 
+                new THREE.MeshPhongMaterial({color: INTERNAL_COLOR})
+            );
+            group.add(baseMesh);
+
+            const planeGeo = new THREE.PlaneGeometry(0.85, 0.85);
+            for(let colorName of colorList) {
+                const mat = new THREE.MeshBasicMaterial({
+                    color: COLORS[colorName]
+                });
+                const mesh = new THREE.Mesh(planeGeo, mat);
+                mesh.position.copy(FACE_MAP[colorName]).multiplyScalar(0.48);
+                mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1), FACE_MAP[colorName]);
+                group.add(mesh);
+            }
+            cubeGroup.add(group);
+            return group;
+        }
+
+        // Initialize perfectly solved cube components
+        for(let i=0; i<8; i++) corners.push(createRigidCubie(CORNER_POS[i], CORNER_COLORS[i]));
+        for(let i=0; i<12; i++) edges.push(createRigidCubie(EDGE_POS[i], EDGE_COLORS[i]));
+        for(let i=0; i<6; i++) centers.push(createRigidCubie(CENTER_POS[i], CENTER_COLORS[i]));
+        
+        // ---------------------------------------------------------------
+        // Logic: Sync with backend cp, co, ep, eo
+        // ---------------------------------------------------------------
+        function findPieceRotation(startPos, startRef, targetPos, targetRef) {
+            for(let q of Q24) {
+                const p = startPos.clone().applyQuaternion(q).round();
+                if(p.equals(targetPos)) {
+                    const r = startRef.clone().applyQuaternion(q).round();
+                    if(r.equals(targetRef)) return q;
+                }
+            }
+            return new THREE.Quaternion(); // Fallback (should theoretically never hit)
+        }
+
+        function syncState(state) {
+            // Reposition corners securely
+            for(let s = 0; s < 8; s++) {
+                const p = state.cp[s];
+                const mesh = corners[p];
+                const q = findPieceRotation(CORNER_POS[p], getNormals('corner', p)[0], CORNER_POS[s], getNormals('corner', s)[state.co[s]]);
+                mesh.position.copy(CORNER_POS[s]);
+                mesh.quaternion.copy(q);
+            }
+            // Reposition edges securely
+            for(let s = 0; s < 12; s++) {
+                const p = state.ep[s];
+                const mesh = edges[p];
+                const q = findPieceRotation(EDGE_POS[p], getNormals('edge', p)[0], EDGE_POS[s], getNormals('edge', s)[state.eo[s]]);
+                mesh.position.copy(EDGE_POS[s]);
+                mesh.quaternion.copy(q);
+            }
+            snapAllToGrid(); // Strictly clamp floats
+            updateStatus(state);
+        }
+
+        function snapMeshToGrid(mesh) {
+            mesh.position.x = Math.round(mesh.position.x);
+            mesh.position.y = Math.round(mesh.position.y);
+            mesh.position.z = Math.round(mesh.position.z);
+            const e = new THREE.Euler().setFromQuaternion(mesh.quaternion);
+            e.x = Math.round(e.x / (Math.PI/2)) * (Math.PI/2);
+            e.y = Math.round(e.y / (Math.PI/2)) * (Math.PI/2);
+            e.z = Math.round(e.z / (Math.PI/2)) * (Math.PI/2);
+            mesh.quaternion.setFromEuler(e);
+        }
+
+        function snapAllToGrid() {
+            corners.forEach(snapMeshToGrid);
+            edges.forEach(snapMeshToGrid);
+            centers.forEach(snapMeshToGrid);
+        }
+
+        // ---------------------------------------------------------------
+        // Animation Framework
+        // ---------------------------------------------------------------
+        const MOVES = {
+            'U': { axis: 'y', val: 1, ang: -Math.PI/2 }, "U'": { axis: 'y', val: 1, ang: Math.PI/2 }, 'U2': { axis: 'y', val: 1, ang: -Math.PI },
+            'D': { axis: 'y', val: -1, ang: Math.PI/2 }, "D'": { axis: 'y', val: -1, ang: -Math.PI/2 }, 'D2': { axis: 'y', val: -1, ang: Math.PI },
+            'R': { axis: 'x', val: 1, ang: -Math.PI/2 }, "R'": { axis: 'x', val: 1, ang: Math.PI/2 }, 'R2': { axis: 'x', val: 1, ang: -Math.PI },
+            'L': { axis: 'x', val: -1, ang: Math.PI/2 }, "L'": { axis: 'x', val: -1, ang: -Math.PI/2 }, 'L2': { axis: 'x', val: -1, ang: Math.PI },
+            'F': { axis: 'z', val: 1, ang: -Math.PI/2 }, "F'": { axis: 'z', val: 1, ang: Math.PI/2 }, 'F2': { axis: 'z', val: 1, ang: -Math.PI },
+            'B': { axis: 'z', val: -1, ang: Math.PI/2 }, "B'": { axis: 'z', val: -1, ang: -Math.PI/2 }, 'B2': { axis: 'z', val: -1, ang: Math.PI }
+        };
+
+        const animQueue = [];
+        let isAnimating = false;
+        let currentAnim = null;
+
+        function processQueue() {
+            if(isAnimating || animQueue.length === 0) return;
+            const task = animQueue.shift();
+            isAnimating = true;
+
+            const moveDef = MOVES[task.move];
+            const layerCubies = [];
+            
+            // Raw snapped layers detection
+            const allCubes = corners.concat(edges).concat(centers);
+            allCubes.forEach(mesh => {
+                if(Math.round(mesh.position[moveDef.axis]) === moveDef.val) {
+                    layerCubies.push(mesh);
+                }
+            });
+
+            // Re-center pivot exactly at globe center to enforce rotational axis symmetry
+            pivot.position.set(0, 0, 0);
+            pivot.rotation.set(0, 0, 0);
+            layerCubies.forEach(mesh => pivot.attach(mesh));
+
+            currentAnim = {
+                cubies: layerCubies,
+                axis: moveDef.axis,
+                startAngle: 0,
+                targetAngle: moveDef.ang,
+                progress: 0,
+                speed: task.speed || 1,
+                state: task.state
+            };
+        }
+
+        // ---------------------------------------------------------------
+        // Render / Status Flow
+        // ---------------------------------------------------------------
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            if(isAnimating && currentAnim) {
+                currentAnim.progress += 0.08 * currentAnim.speed; // Frame delta scaling
+                if(currentAnim.progress >= 1) currentAnim.progress = 1;
+
+                pivot.rotation[currentAnim.axis] = currentAnim.targetAngle * currentAnim.progress;
+
+                if(currentAnim.progress === 1) {
+                    currentAnim.cubies.forEach(mesh => cubeGroup.attach(mesh));
+                    pivot.rotation.set(0,0,0);
+                    
+                    if(currentAnim.state) syncState(currentAnim.state);
+                    else snapAllToGrid();
+                    
+                    isAnimating = false;
+                    currentAnim = null;
+                    processQueue();
+                }
+            }
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = wrapper.clientWidth / wrapper.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(wrapper.clientWidth, wrapper.clientHeight);
+        });
+
+        // ---------------------------------------------------------------
+        // API Communication
+        // ---------------------------------------------------------------
+        function updateStatus(state) {
+            const stateEl = document.getElementById('state-val');
+            stateEl.innerHTML = state.is_solved ? '<span class="solved">SOLVED</span>' : '<span class="unsolved">Scrambled</span>';
+            document.getElementById('legal-val').textContent = state.is_legal ? 'Yes' : 'NO';
+            document.getElementById('corners-val').textContent = 'Sum mod 3 = ' + state.corner_orientation_sum;
+            document.getElementById('edges-val').textContent = 'Sum mod 2 = ' + state.edge_orientation_sum;
+            document.getElementById('move-log').textContent = (state.move_history && state.move_history.length > 0) ? state.move_history.join(' ') : 'No moves applied.';
+        }
+
+        async function fetchState() {
+            try {
+                const res = await fetch('/state');
+                const data = await res.json();
+                syncState(data); // Sync silently
+            } catch (e) { console.error('Failed to fetch state:', e); }
+        }
+
+        async function sendMove(move) {
+            try {
+                const res = await fetch('/move', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ move })
+                });
+                const data = await res.json();
+                if (data.state) animQueue.push({ move: move, speed: 1.5, state: data.state });
+                processQueue();
+            } catch (e) { console.error('Move failed:', e); }
+        }
+
+        async function doScramble() {
+            try {
+                const res = await fetch('/scramble', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ length: 20 }) });
+                const data = await res.json();
+                document.getElementById('solution-output').textContent = 'Scramble: ' + data.scramble;
+                
+                // Fast forward scramble queue
+                const moves = data.scramble.split(' ');
+                moves.forEach((m, idx) => {
+                    const finalState = (idx === moves.length - 1) ? data.state : null;
+                    animQueue.push({ move: m, speed: 4, state: finalState });
+                });
+                processQueue();
+            } catch (e) { console.error('Scramble failed:', e); }
+        }
+
+        async function doSolve() {
+            document.getElementById('solution-output').textContent = 'Solving (Kociemba)...';
+            try {
+                const res = await fetch('/solve', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const data = await res.json();
+                
+                if (data.solution) {
+                    document.getElementById('solution-output').textContent = `Expert Solution (${data.num_moves} moves, ${data.solve_time.toFixed(4)}s): ${data.solution}`;
+                    const moves = data.solution.split(' ');
+                    moves.forEach((m, idx) => {
+                        const finalState = (idx === moves.length - 1) ? data.state : null;
+                        animQueue.push({ move: m, speed: 2, state: finalState });
+                    });
+                    processQueue();
+                } else {
+                    document.getElementById('solution-output').textContent = 'Already solved!';
+                    if(data.state) syncState(data.state);
+                }
+            } catch (e) { console.error('Solve failed:', e); }
+        }
+
+        async function doSolveAI() {
+            document.getElementById('solution-output').textContent = 'Solving (AI Model)...';
+            try {
+                const res = await fetch('/solve_ai', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const data = await res.json();
+                
+                if (data.status === 'ok') {
+                    const avgConf = data.confidences.reduce((a, b) => a + b, 0) / data.confidences.length;
+                    document.getElementById('solution-output').textContent = `AI Solution (${data.num_moves} moves, ${data.solve_time.toFixed(4)}s, Conf: ${(avgConf*100).toFixed(1)}%): ${data.solution}`;
+                    const moves = data.solution.split(' ');
+                    moves.forEach((m, idx) => {
+                        const finalState = (idx === moves.length - 1) ? data.state : null;
+                        animQueue.push({ move: m, speed: 2, state: finalState });
+                    });
+                    processQueue();
+                } else {
+                    document.getElementById('solution-output').textContent = 'AI failed to solve / Already solved.';
+                    if(data.state) syncState(data.state);
+                }
+            } catch (e) { console.error('AI Solve failed:', e); }
+        }
+
+        async function doCompareBenchmark() {
+            const output = document.getElementById('benchmark-output');
+            const section = document.getElementById('benchmark-section');
+            section.style.display = 'block';
+            output.innerHTML = '<div style="color: #88ccff; padding: 10px; text-align: center;">Running 25 tests... please wait.</div>';
+            
+            try {
+                const res = await fetch('/compare_benchmark', { method: 'POST' });
+                const data = await res.json();
+                
+                if (data.status === 'ok') {
+                    let html = '<table class="benchmark-table"><thead><tr><th>Depth</th><th>AI %</th><th>Koc %</th><th>AI Time</th><th>Koc Time</th></tr></thead><tbody>';
+                    data.results.forEach(r => {
+                        html += `<tr>
+                            <td>Depth ${r.depth}</td>
+                            <td class="highlight-ai">${(r.ai_rate*100).toFixed(0)}%</td>
+                            <td class="highlight-koc">${(r.koc_rate*100).toFixed(0)}%</td>
+                            <td>${r.ai_avg_time.toFixed(4)}s</td>
+                            <td>${r.koc_avg_time.toFixed(4)}s</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    output.innerHTML = html;
+                }
+            } catch (e) { 
+                console.error('Benchmark failed:', e); 
+                output.innerHTML = '<div style="color: #ff6060;">Benchmark failed. Check console.</div>';
+            }
+        }
+
+        async function doReset() {
+            try {
+                const res = await fetch('/reset', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+                const data = await res.json();
+                document.getElementById('solution-output').textContent = 'Cube reset to solved state.';
+                syncState(data.state); // instant snap
+            } catch (e) { console.error('Reset failed:', e); }
+        }
+
+        // Generate UI Buttons
+        const FACES = ['U', 'D', 'R', 'L', 'F', 'B'];
+        const btnContainer = document.getElementById('move-buttons');
+        FACES.forEach(face => {
+            [face, face + "'", face + '2'].forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'btn'; btn.textContent = name;
+                btn.onclick = () => sendMove(name);
+                btnContainer.appendChild(btn);
+            });
+        });
+
+        // Boot
+        fetchState();
+    </script>
+</body>
+</html>
