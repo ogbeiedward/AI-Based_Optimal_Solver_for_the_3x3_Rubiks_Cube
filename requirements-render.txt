@@ -1,0 +1,7 @@
+# Optimized requirements for Render (Free Tier)
+--index-url https://download.pytorch.org/whl/cpu
+torch
+numpy
+matplotlib
+pytest
+tqdm
