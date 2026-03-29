@@ -1,3 +1,12 @@
+---
+title: AI Rubiks Cube Solver
+emoji: 🧩
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+pinned: false
+---
+
 # AI-Based Optimal Solver for the 3x3 Rubik's Cube
 
 This repository contains the implementation of my M.Sc. Thesis project, which focuses on developing an optimal solver for the 3x3 Rubik's Cube using a hybrid approach of classical computational algorithms and neural network heuristics.
