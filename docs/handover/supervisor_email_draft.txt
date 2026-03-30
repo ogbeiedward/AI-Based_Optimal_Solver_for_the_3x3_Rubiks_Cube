@@ -1,0 +1,30 @@
+Subject: Progress Update: AI-Based Optimal Rubik's Cube Solver (M.Sc. Project)
+
+Dear Prof. Rojek,
+
+I hope you are doing well.
+
+Following up on our last conversation, I am writing to share the latest progress on my Rubik's Cube solver project. I have successfully integrated both the classical and neural-network-based solvers into a functional 3D web visualizer, which you can now view live at the link below:
+
+Project Link: https://rubiks-cube-solver-ll3d.onrender.com/
+
+(Note: Since I am using a free Render instance, the server might go to 'sleep' when inactive. It may take about 1-2 minutes to spin up when you first open the link.)
+
+Regarding the solving mechanics, the system now features two distinct modes:
+
+1. Classical Solver (Kociemba Algorithm): This is fully operational and finds near-optimal solutions (average of 18-21 moves) almost instantly for any possible scramble.
+
+2. AI Solver (Neural Network): I have focused significantly on optimizing the model's performance. It is a Multi-Layer Perceptron trained via a rigorous curriculum learning approach using a dataset of 150,000 samples.
+
+Technical Highlights of the AI Solver:
+- Training Foundation: We used a learning rate of 0.001 and a batch size of 256 to ensure stable convergence across the curriculum.
+- Current Achievement: The model has achieved a 100% optimal solve rate for scrambles up to Depth 4 and approximately 71% at Depth 5.
+- Scale: By vectorizing the state encoding process, the system can now handle much higher-capacity training than my previous iterations, allowing the model to master the combinatorial complexity of shorter Optimal Paths with near-perfect accuracy.
+
+Currently, the AI handles shallow optimal solving perfectly (depth 1-4) and serves as an excellent proof-of-concept for how a neural network can learn the group-theoretical structure of the cube. Reaching the universal God's Number (20 moves) for every possible state would be the next step, likely by using this model as a heuristic guide for a search algorithm like A*.
+
+I would be happy to walk you through the codebase or the training results in more detail whenever you have a moment.
+
+Best regards,
+
+[Your Name]
