@@ -359,6 +359,120 @@ def evaluate_solve_rate(model, depth, num_tests=100, max_steps=50, seed=None, de
     return solved_count / max(num_tests, 1)
 
 
+def solve_with_beam_search(cube, model, beam_width=5, max_steps=50, device=None):
+    """
+    Attempt to solve a cube using beam search over the neural network's predictions.
+
+    Instead of greedily picking one move at each step, beam search maintains the
+    top `beam_width` candidate solution paths simultaneously (by cumulative log
+    probability), expanding each at every step and keeping only the best.  This
+    gives the model more chances to find a valid solution path even when the
+    highest-probability single move leads to a dead end.
+
+    Args:
+        cube: a CubieCube instance (will not be modified).
+        model: trained RubiksMLP instance.
+        beam_width: number of candidate paths to keep at each step.
+        max_steps: maximum depth to search.
+        device: torch device.
+
+    Returns:
+        dict with keys:
+          - "solved": bool
+          - "solution": list of move strings (best path found)
+          - "num_moves": int
+          - "solve_time": float, wall-clock seconds
+          - "search_method": "beam_search"
+          - "beam_width": int
+    """
+    if device is None:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model.eval()
+    start_time = time.perf_counter()
+
+    initial_cube = cube.copy()
+    if initial_cube.is_solved():
+        return {
+            "solved": True,
+            "solution": [],
+            "num_moves": 0,
+            "solve_time": 0.0,
+            "search_method": "beam_search",
+            "beam_width": beam_width,
+        }
+
+    # Each beam entry: (cumulative_neg_log_prob, tiebreak_counter, path, cube_state)
+    # Min-heap order on neg_log_prob means highest-probability paths come first.
+    _tie = [0]
+
+    def _next():
+        _tie[0] += 1
+        return _tie[0]
+
+    beam = [(0.0, _next(), [], initial_cube)]
+    visited = {initial_cube.to_kociemba_string()}
+
+    best_partial_path = []
+
+    for _step in range(max_steps):
+        if not beam:
+            break
+
+        candidates = []
+
+        for cum_neg_lp, _, path, current_cube in beam:
+            state_vec = encode_state(current_cube)
+            state_tensor = torch.tensor(state_vec, dtype=torch.float32).to(device)
+
+            with torch.no_grad():
+                logits = model(state_tensor.unsqueeze(0))
+                probs = torch.softmax(logits, dim=1)[0]
+
+            top_probs, top_indices = torch.topk(probs, min(beam_width, NUM_MOVES))
+
+            for prob, idx in zip(top_probs.tolist(), top_indices.tolist()):
+                move_name = INDEX_TO_MOVE[idx]
+                new_cube = current_cube.copy()
+                new_cube.apply_move(move_name)
+
+                state_key = new_cube.to_kociemba_string()
+                if state_key in visited:
+                    continue
+                visited.add(state_key)
+
+                neg_lp = -np.log(max(prob, 1e-10))
+                new_path = path + [move_name]
+
+                if new_cube.is_solved():
+                    end_time = time.perf_counter()
+                    return {
+                        "solved": True,
+                        "solution": new_path,
+                        "num_moves": len(new_path),
+                        "solve_time": end_time - start_time,
+                        "search_method": "beam_search",
+                        "beam_width": beam_width,
+                    }
+
+                candidates.append((cum_neg_lp + neg_lp, _next(), new_path, new_cube))
+
+        candidates.sort(key=lambda x: x[0])
+        beam = candidates[:beam_width]
+        if beam:
+            best_partial_path = beam[0][2]
+
+    end_time = time.perf_counter()
+    return {
+        "solved": False,
+        "solution": best_partial_path,
+        "num_moves": len(best_partial_path),
+        "solve_time": end_time - start_time,
+        "search_method": "beam_search",
+        "beam_width": beam_width,
+    }
+
+
 def solve_with_ai(cube, model, max_steps=50, device=None):
     """
     Attempt to solve a cube using the trained neural network.

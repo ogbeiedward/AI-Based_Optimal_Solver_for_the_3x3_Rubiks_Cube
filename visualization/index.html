@@ -190,6 +190,38 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
             word-break: break-all;
         }
 
+        #now-playing {
+            font-size: 11px;
+            padding: 6px 8px;
+            background: rgba(20, 20, 50, 0.7);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 200, 50, 0.2);
+            color: #ffcc44;
+            font-family: 'Consolas', monospace;
+            min-height: 22px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .speed-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #8080aa;
+        }
+
+        .speed-row select {
+            background: rgba(30, 30, 60, 0.9);
+            color: #c0c0ff;
+            border: 1px solid rgba(100, 100, 255, 0.3);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
         .face-label {
             display: inline-block;
             width: 18px;
@@ -262,8 +294,20 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
                     <button class="btn btn-action danger" onclick="doReset()">Reset</button>
                 </div>
                 <div class="btn-group" style="margin-top: 4px;">
-                    <button class="btn btn-action success" style="grid-column: span 1.5;" onclick="doSolve()">Solve (Expert)</button>
-                    <button class="btn btn-action primary" style="grid-column: span 1.5; background: rgba(100, 40, 120, 0.6); border-color: rgba(200, 100, 255, 0.3);" onclick="doSolveAI()">Solve (AI)</button>
+                    <button class="btn btn-action success" style="grid-column: span 3;" onclick="doSolve()">Solve (Kociemba Expert)</button>
+                </div>
+                <div class="btn-group" style="margin-top: 4px;">
+                    <button class="btn btn-action primary" style="grid-column: span 1; background: rgba(100, 40, 120, 0.6); border-color: rgba(200, 100, 255, 0.3);" onclick="doSolveAI()">AI Greedy</button>
+                    <button class="btn btn-action primary" style="grid-column: span 2; background: rgba(40, 80, 140, 0.7); border-color: rgba(80, 160, 255, 0.4);" onclick="doSolveAIBeam()">AI Beam Search (w=5)</button>
+                </div>
+                <div class="speed-row">
+                    <span>Animation speed:</span>
+                    <select id="speed-select">
+                        <option value="0.5">Slow</option>
+                        <option value="1.2" selected>Normal</option>
+                        <option value="2.5">Fast</option>
+                        <option value="5">Very Fast</option>
+                    </select>
                 </div>
                 <button class="btn btn-action" style="margin-top: 4px; background: rgba(60, 60, 80, 0.5);" onclick="doCompareBenchmark()">Run Benchmark Comparison</button>
             </div>
@@ -281,6 +325,7 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
             <div class="section">
                 <h2>Solution</h2>
                 <div id="solution-output">No solution yet.</div>
+                <div id="now-playing"></div>
             </div>
 
             <div class="section">
@@ -494,9 +539,31 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
         let isAnimating = false;
         let currentAnim = null;
 
+        function getSolveSpeed() {
+            const sel = document.getElementById('speed-select');
+            return sel ? parseFloat(sel.value) : 1.2;
+        }
+
+        // Progress tracker for animated solve sequences
+        const solveProgress = { active: false, current: 0, total: 0, label: '' };
+
+        function showNowPlaying(move, current, total, label) {
+            const el = document.getElementById('now-playing');
+            if (!el) return;
+            el.style.display = 'block';
+            el.textContent = `${label}  |  Move ${current}/${total}: ${move}`;
+        }
+
+        function hideNowPlaying() {
+            const el = document.getElementById('now-playing');
+            if (el) { el.style.display = 'none'; el.textContent = ''; }
+            solveProgress.active = false;
+        }
+
         function processQueue() {
             if(isAnimating || animQueue.length === 0) return;
             const task = animQueue.shift();
+            if (task.onStart) task.onStart(task);
             isAnimating = true;
 
             const moveDef = MOVES[task.move];
@@ -522,7 +589,8 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
                 targetAngle: moveDef.ang,
                 progress: 0,
                 speed: task.speed || 1,
-                state: task.state
+                state: task.state,
+                isLast: task.isLast || false,
             };
         }
 
@@ -542,10 +610,12 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
                 if(currentAnim.progress === 1) {
                     currentAnim.cubies.forEach(mesh => cubeGroup.attach(mesh));
                     pivot.rotation.set(0,0,0);
-                    
+
                     if(currentAnim.state) syncState(currentAnim.state);
                     else snapAllToGrid();
-                    
+
+                    if(currentAnim.isLast) hideNowPlaying();
+
                     isAnimating = false;
                     currentAnim = null;
                     processQueue();
@@ -592,17 +662,29 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
             } catch (e) { console.error('Move failed:', e); }
         }
 
+        function queueSolveMoves(moves, finalState, label, speed) {
+            const total = moves.length;
+            moves.forEach((m, idx) => {
+                const isLast = idx === total - 1;
+                animQueue.push({
+                    move: m,
+                    speed: speed,
+                    state: isLast ? finalState : null,
+                    isLast: isLast,
+                    onStart: () => showNowPlaying(m, idx + 1, total, label),
+                });
+            });
+            processQueue();
+        }
+
         async function doScramble(length = 20) {
             try {
                 const res = await fetch('/scramble', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ length: length }) });
                 const data = await res.json();
                 document.getElementById('solution-output').textContent = 'Scramble (' + length + '): ' + data.scramble;
-                
-                // Fast forward scramble queue
                 const moves = data.scramble.split(' ');
                 moves.forEach((m, idx) => {
-                    const finalState = (idx === moves.length - 1) ? data.state : null;
-                    animQueue.push({ move: m, speed: 4, state: finalState });
+                    animQueue.push({ move: m, speed: 5, state: (idx === moves.length - 1) ? data.state : null });
                 });
                 processQueue();
             } catch (e) { console.error('Scramble failed:', e); }
@@ -613,46 +695,62 @@ This is the highly interactive Three.js web frontend. It simulates true real-wor
             try {
                 const res = await fetch('/solve', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 const data = await res.json();
-                
-                if (data.solution) {
-                    document.getElementById('solution-output').textContent = `Expert Solution (${data.num_moves} moves, ${data.solve_time.toFixed(4)}s): ${data.solution}`;
-                    const moves = data.solution.split(' ');
-                    moves.forEach((m, idx) => {
-                        const finalState = (idx === moves.length - 1) ? data.state : null;
-                        animQueue.push({ move: m, speed: 2, state: finalState });
-                    });
-                    processQueue();
+                if (data.solution && data.num_moves > 0) {
+                    document.getElementById('solution-output').textContent =
+                        `Kociemba: ${data.num_moves} moves in ${data.solve_time.toFixed(4)}s\n${data.solution}`;
+                    queueSolveMoves(data.solution.split(' '), data.state, 'Kociemba', getSolveSpeed());
                 } else {
                     document.getElementById('solution-output').textContent = 'Already solved!';
-                    if(data.state) syncState(data.state);
+                    if (data.state) syncState(data.state);
                 }
             } catch (e) { console.error('Solve failed:', e); }
         }
 
         async function doSolveAI() {
-            document.getElementById('solution-output').textContent = 'Solving (AI Model)...';
+            document.getElementById('solution-output').textContent = 'Solving (AI Greedy)...';
             try {
                 const res = await fetch('/solve_ai', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
                 const data = await res.json();
-                
                 if (data.status === 'ok') {
                     if (data.num_moves === 0) {
                         document.getElementById('solution-output').textContent = 'Already solved!';
                     } else {
                         const avgConf = data.confidences.reduce((a, b) => a + b, 0) / data.confidences.length;
-                        document.getElementById('solution-output').textContent = `AI Solution (${data.num_moves} moves, ${data.solve_time.toFixed(4)}s, Conf: ${(avgConf*100).toFixed(1)}%): ${data.solution}`;
-                        const moves = data.solution.split(' ');
-                        moves.forEach((m, idx) => {
-                            const finalState = (idx === moves.length - 1) ? data.state : null;
-                            animQueue.push({ move: m, speed: 2, state: finalState });
-                        });
-                        processQueue();
+                        document.getElementById('solution-output').textContent =
+                            `AI Greedy: ${data.num_moves} moves in ${data.solve_time.toFixed(4)}s (avg conf ${(avgConf*100).toFixed(1)}%)\n${data.solution}`;
+                        queueSolveMoves(data.solution.split(' '), data.state, 'AI Greedy', getSolveSpeed());
                     }
                 } else {
-                    document.getElementById('solution-output').innerHTML = '<span style="color: #ffb0b0;">AI search depth exceeded (Max 50 moves).</span><br><small>Note: AI model only optimally solves up to depth 5-8.</small>';
-                    if(data.state) syncState(data.state);
+                    document.getElementById('solution-output').innerHTML =
+                        '<span style="color:#ffb0b0;">AI Greedy: search failed (max 50 moves). Model reliable up to depth 5.</span>';
+                    if (data.state) syncState(data.state);
                 }
             } catch (e) { console.error('AI Solve failed:', e); }
+        }
+
+        async function doSolveAIBeam() {
+            document.getElementById('solution-output').textContent = 'Solving (AI Beam Search, w=5)...';
+            try {
+                const res = await fetch('/solve_ai_beam', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ beam_width: 5 }),
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    if (data.num_moves === 0) {
+                        document.getElementById('solution-output').textContent = 'Already solved!';
+                    } else {
+                        document.getElementById('solution-output').textContent =
+                            `AI Beam Search (w=${data.beam_width}): ${data.num_moves} moves in ${data.solve_time.toFixed(4)}s\n${data.solution}`;
+                        queueSolveMoves(data.solution.split(' '), data.state, `AI Beam (w=${data.beam_width})`, getSolveSpeed());
+                    }
+                } else {
+                    document.getElementById('solution-output').innerHTML =
+                        '<span style="color:#ffb0b0;">AI Beam Search: no solution found within depth limit. Model reliable up to depth 5.</span>';
+                    if (data.state) syncState(data.state);
+                }
+            } catch (e) { console.error('AI Beam Solve failed:', e); }
         }
 
         async function doCompareBenchmark() {

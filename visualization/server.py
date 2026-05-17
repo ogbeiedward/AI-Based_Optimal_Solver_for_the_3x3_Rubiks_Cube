@@ -36,7 +36,7 @@ from core.cube import CubieCube
 from core.cubie import Color, COLOR_NAMES
 from utils.scramble import generate_scramble, scramble_to_string, generate_scramble_at_depth
 from solvers.kociemba_solver import solve_with_kociemba
-from solvers.ai_solver import RubiksMLP, solve_with_ai
+from solvers.ai_solver import RubiksMLP, solve_with_ai, solve_with_beam_search
 import torch
 
 # Global cube state
@@ -193,6 +193,26 @@ class CubeHandler(SimpleHTTPRequestHandler):
                 'num_moves': result['num_moves'],
                 'solve_time': result['solve_time'],
                 'confidences': result['confidences'],
+                'state': get_cube_state_json(),
+            })
+
+        elif parsed.path == '/solve_ai_beam':
+            if _ai_model is None:
+                self._send_json({'status': 'error', 'message': 'AI model not loaded'}, 400)
+                return
+
+            beam_width = int(data.get('beam_width', 5))
+            result = solve_with_beam_search(_cube, _ai_model, beam_width=beam_width, device=_device)
+            if result['solved']:
+                _cube.apply_sequence(result['solution'])
+                _move_history.extend(result['solution'])
+
+            self._send_json({
+                'status': 'ok' if result['solved'] else 'fail',
+                'solution': ' '.join(result['solution']),
+                'num_moves': result['num_moves'],
+                'solve_time': result['solve_time'],
+                'beam_width': result['beam_width'],
                 'state': get_cube_state_json(),
             })
 
