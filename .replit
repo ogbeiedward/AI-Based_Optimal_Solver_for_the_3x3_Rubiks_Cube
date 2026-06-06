@@ -1,0 +1,16 @@
+run = "python visualization/server.py"
+language = "python3"
+
+[nix]
+channel = "stable-23.11"
+
+[unitTest]
+language = "python3"
+
+[deployment]
+build = ["pip install -r requirements.txt"]
+run = ["python visualization/server.py"]
+
+[[ports]]
+localPort = 5000
+externalPort = 5000

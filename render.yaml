@@ -1,11 +1,12 @@
 services:
   - type: web
-    name: rubiks-ai-solver
+    name: rubiks-solver
     env: python
-    buildCommand: pip install -r requirements-render.txt
-    startCommand: python visualization/server.py
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python visualization/server.py"
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.10
       - key: PORT
-        value: 8080
+        value: 5000
