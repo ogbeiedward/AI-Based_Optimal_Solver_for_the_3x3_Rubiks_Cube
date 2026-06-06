@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This utility file contains the logic for generating random yet valid Rubik's cube scrambles, mimicking official WCA (World Cube Association) tournament standards.
-"""
-
-"""
 scramble.py
 -----------
 WCA-style random scramble generator for the 3x3 Rubik's Cube.

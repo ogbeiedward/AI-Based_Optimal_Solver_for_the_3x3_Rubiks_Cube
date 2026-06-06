@@ -1,0 +1,250 @@
+{
+  "kociemba": [
+    {
+      "depth": 1,
+      "rate": 1.0,
+      "moves": 1.0,
+      "ms": 0.11
+    },
+    {
+      "depth": 2,
+      "rate": 1.0,
+      "moves": 2.0,
+      "ms": 0.21
+    },
+    {
+      "depth": 3,
+      "rate": 1.0,
+      "moves": 3.0,
+      "ms": 1.14
+    },
+    {
+      "depth": 4,
+      "rate": 1.0,
+      "moves": 4.0,
+      "ms": 4.66
+    },
+    {
+      "depth": 5,
+      "rate": 1.0,
+      "moves": 5.0,
+      "ms": 17.76
+    },
+    {
+      "depth": 6,
+      "rate": 1.0,
+      "moves": 6.0,
+      "ms": 64.54
+    },
+    {
+      "depth": 7,
+      "rate": 1.0,
+      "moves": 7.0,
+      "ms": 337.88
+    },
+    {
+      "depth": 8,
+      "rate": 1.0,
+      "moves": 8.0,
+      "ms": 820.58
+    },
+    {
+      "depth": 9,
+      "rate": 1.0,
+      "moves": 9.0,
+      "ms": 4019.39
+    },
+    {
+      "depth": 10,
+      "rate": 1.0,
+      "moves": 9.94,
+      "ms": 9238.69
+    }
+  ],
+  "greedy": [
+    {
+      "depth": 1,
+      "rate": 1.0,
+      "moves": 1.0,
+      "ms": 0.62
+    },
+    {
+      "depth": 2,
+      "rate": 1.0,
+      "moves": 2.0,
+      "ms": 0.98
+    },
+    {
+      "depth": 3,
+      "rate": 1.0,
+      "moves": 3.0,
+      "ms": 1.57
+    },
+    {
+      "depth": 4,
+      "rate": 0.94,
+      "moves": 4.0,
+      "ms": 2.66
+    },
+    {
+      "depth": 5,
+      "rate": 0.56,
+      "moves": 5.18,
+      "ms": 2.85
+    },
+    {
+      "depth": 6,
+      "rate": 0.38,
+      "moves": 6.05,
+      "ms": 3.5
+    },
+    {
+      "depth": 7,
+      "rate": 0.12,
+      "moves": 7.0,
+      "ms": 3.75
+    },
+    {
+      "depth": 8,
+      "rate": 0.02,
+      "moves": 9.0,
+      "ms": 5.32
+    },
+    {
+      "depth": 9,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    },
+    {
+      "depth": 10,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    }
+  ],
+  "beam_w3": [
+    {
+      "depth": 1,
+      "rate": 1.0,
+      "moves": 1.0,
+      "ms": 2.03
+    },
+    {
+      "depth": 2,
+      "rate": 1.0,
+      "moves": 2.0,
+      "ms": 1.16
+    },
+    {
+      "depth": 3,
+      "rate": 1.0,
+      "moves": 3.0,
+      "ms": 3.01
+    },
+    {
+      "depth": 4,
+      "rate": 0.94,
+      "moves": 4.0,
+      "ms": 6.61
+    },
+    {
+      "depth": 5,
+      "rate": 0.64,
+      "moves": 5.12,
+      "ms": 7.19
+    },
+    {
+      "depth": 6,
+      "rate": 0.44,
+      "moves": 6.0,
+      "ms": 9.36
+    },
+    {
+      "depth": 7,
+      "rate": 0.2,
+      "moves": 7.7,
+      "ms": 11.75
+    },
+    {
+      "depth": 8,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    },
+    {
+      "depth": 9,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    },
+    {
+      "depth": 10,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    }
+  ],
+  "beam_w5": [
+    {
+      "depth": 1,
+      "rate": 1.0,
+      "moves": 1.0,
+      "ms": 0.64
+    },
+    {
+      "depth": 2,
+      "rate": 1.0,
+      "moves": 2.0,
+      "ms": 1.23
+    },
+    {
+      "depth": 3,
+      "rate": 1.0,
+      "moves": 3.0,
+      "ms": 4.56
+    },
+    {
+      "depth": 4,
+      "rate": 0.98,
+      "moves": 4.04,
+      "ms": 11.31
+    },
+    {
+      "depth": 5,
+      "rate": 0.64,
+      "moves": 5.0,
+      "ms": 11.88
+    },
+    {
+      "depth": 6,
+      "rate": 0.46,
+      "moves": 6.0,
+      "ms": 15.46
+    },
+    {
+      "depth": 7,
+      "rate": 0.22,
+      "moves": 8.82,
+      "ms": 24.8
+    },
+    {
+      "depth": 8,
+      "rate": 0.04,
+      "moves": 10.0,
+      "ms": 38.5
+    },
+    {
+      "depth": 9,
+      "rate": 0.04,
+      "moves": 36.5,
+      "ms": 109.78
+    },
+    {
+      "depth": 10,
+      "rate": 0.0,
+      "moves": 0,
+      "ms": 0
+    }
+  ]
+}

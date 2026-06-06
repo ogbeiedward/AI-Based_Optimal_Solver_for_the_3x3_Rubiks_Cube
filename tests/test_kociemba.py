@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This suite of tests verifies that the Kociemba wrapper correctly interacts with the external solver library and successfully returns valid solutions.
-"""
-
-"""
 test_kociemba.py
 ----------------
 Unit tests for the IDA* solver (pure Python Kociemba replacement).

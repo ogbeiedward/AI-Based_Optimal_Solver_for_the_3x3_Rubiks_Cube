@@ -1,12 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This module generates the curriculum training dataset for the Rubik's Cube AI solver.
-Each sample is (one-hot encoded cube state, next Kociemba move label).
-Datasets are generated at increasing difficulty levels and saved as .npz files.
-The 80%-replacement strategy keeps the dataset balanced during curriculum scaling.
-"""
-
-"""
 dataset_generator.py
 --------------------
 Curriculum dataset generator for the 3x3 Rubik's Cube AI solver.

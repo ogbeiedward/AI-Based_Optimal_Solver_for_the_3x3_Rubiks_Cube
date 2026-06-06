@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-Unit tests to ensure our random scramble generator is actually random, respects the correct move notation, and doesn't output contradictory sequences.
-"""
-
-"""
 test_scramble.py
 ----------------
 Unit tests for the WCA-style scramble generator.

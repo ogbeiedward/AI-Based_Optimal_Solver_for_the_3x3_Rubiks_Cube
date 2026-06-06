@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file serves as the local HTTP backend. It continuously transmits the exact mathematical piece configurations and move queues over to the local web browser's 3D engine.
-"""
-
-"""
 server.py
 ---------
 Lightweight HTTP server for the 3D Rubik's Cube visualization.
@@ -221,39 +216,45 @@ class CubeHandler(SimpleHTTPRequestHandler):
                 self._send_json({'status': 'error', 'message': 'AI model not loaded'}, 400)
                 return
 
-            # Run a quick benchmark (5 tests per depth, up to depth 5)
-            # This is synchronous but small enough for a local viz tool
             import statistics
+            tests_per_depth = 5
             benchmark_results = []
-            for depth in range(1, 6):
-                ai_solved = 0
-                koc_solved = 0
-                ai_times = []
-                koc_times = []
 
-                for _ in range(5):
+            for depth in range(1, 9):  # test depths 1-8
+                koc_solved = 0; koc_times = []
+                g_solved   = 0; g_times   = []
+                b5_solved  = 0; b5_times  = []
+
+                for _ in range(tests_per_depth):
                     scramble = generate_scramble_at_depth(depth)
                     test_cube = CubieCube()
                     test_cube.apply_sequence(scramble)
 
-                    # Kociemba
                     k_res = solve_with_kociemba(test_cube)
                     if k_res['error'] is None:
                         koc_solved += 1
-                        koc_times.append(k_res['solve_time'])
+                        koc_times.append(k_res['solve_time'] * 1000)
 
-                    # AI
                     a_res = solve_with_ai(test_cube, _ai_model, device=_device)
                     if a_res['solved']:
-                        ai_solved += 1
-                        ai_times.append(a_res['solve_time'])
+                        g_solved += 1
+                        g_times.append(a_res['solve_time'] * 1000)
+
+                    b_res = solve_with_beam_search(test_cube, _ai_model, beam_width=5, device=_device)
+                    if b_res['solved']:
+                        b5_solved += 1
+                        b5_times.append(b_res['solve_time'] * 1000)
+
+                def avg(lst): return round(statistics.mean(lst), 2) if lst else 0
 
                 benchmark_results.append({
-                    'depth': depth,
-                    'ai_rate': ai_solved / 5,
-                    'koc_rate': koc_solved / 5,
-                    'ai_avg_time': statistics.mean(ai_times) if ai_times else 0,
-                    'koc_avg_time': statistics.mean(koc_times) if koc_times else 0,
+                    'depth':       depth,
+                    'koc_rate':    koc_solved / tests_per_depth,
+                    'koc_avg_ms':  avg(koc_times),
+                    'ai_rate':     g_solved   / tests_per_depth,
+                    'ai_avg_ms':   avg(g_times),
+                    'beam_rate':   b5_solved  / tests_per_depth,
+                    'beam_avg_ms': avg(b5_times),
                 })
 
             self._send_json({

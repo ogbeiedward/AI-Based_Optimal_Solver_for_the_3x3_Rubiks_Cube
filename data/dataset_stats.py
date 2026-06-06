@@ -1,10 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-Loads a saved curriculum dataset and prints comprehensive statistics:
-total samples, per-depth breakdown, move label distribution, and state uniqueness.
-"""
-
-"""
 dataset_stats.py
 ----------------
 Display statistics for a saved Rubik's Cube curriculum dataset.
@@ -57,7 +51,7 @@ def print_dataset_stats(filepath=None, states=None, labels=None, depths=None):
 
     # --- Depth distribution ---------------------------------------------------
     unique_depths = np.unique(depths)
-    print(f"\n  Scramble depth range  : {depths.min()} – {depths.max()} moves")
+    print(f"\n  Scramble depth range  : {depths.min()}  -  {depths.max()} moves")
     print(f"  Mean scramble depth   : {depths.mean():.2f}")
     print()
     print(f"  {'Depth':>6}  {'Samples':>9}  {'Fraction':>9}")

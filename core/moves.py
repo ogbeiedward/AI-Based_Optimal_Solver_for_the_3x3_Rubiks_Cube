@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file contains the extremely important mathematical maps for every Rubik's Cube rotation. When you perform a turn (like Right or Up), these arrays determine exactly how the pieces shuffle and flip.
-"""
-
-"""
 moves.py
 --------
 Permutation and orientation tables for all six face moves of a 3x3 Rubik's Cube.

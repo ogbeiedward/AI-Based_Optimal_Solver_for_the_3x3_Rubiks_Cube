@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file binds keyboard inputs to cube rotations for the local matplotlib Python visualizer, so you can manually play the cube using your keyboard.
-"""
-
-"""
 controls.py
 -----------
 Interactive keyboard controls for the matplotlib-based Rubik's Cube viewer.
@@ -213,21 +208,21 @@ class InteractiveViewer:
         if key is None:
             return
 
-        # Face moves — clockwise (lowercase)
+        # Face moves  -  clockwise (lowercase)
         if key in _CLOCKWISE_MAP:
             move = _CLOCKWISE_MAP[key]
             print(f"  Move: {move}")
             self._apply_move(move)
             return
 
-        # Face moves — counterclockwise (shift + key, shows as uppercase)
+        # Face moves  -  counterclockwise (shift + key, shows as uppercase)
         if key in _PRIME_MAP:
             move = _PRIME_MAP[key]
             print(f"  Move: {move}")
             self._apply_move(move)
             return
 
-        # Face moves — double (number keys)
+        # Face moves  -  double (number keys)
         if key in _DOUBLE_MAP:
             move = _DOUBLE_MAP[key]
             print(f"  Move: {move}")
@@ -247,7 +242,7 @@ class InteractiveViewer:
             self._reverse()
             return
 
-        # Camera rotation — arrow keys
+        # Camera rotation  -  arrow keys
         if key == 'left':
             self.azim -= _CAMERA_STEP
             self._redraw()

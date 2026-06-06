@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This script is used to benchmark and compare our custom AI solver against the mathematically perfect Kociemba algorithm to evaluate performance and efficiency.
-"""
-
-"""
 ai_vs_kociemba.py
 -----------------
 Comparative evaluation of the AI solver vs the Kociemba two-phase solver.

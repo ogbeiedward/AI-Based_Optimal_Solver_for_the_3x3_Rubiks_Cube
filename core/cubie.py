@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file stores all the foundational constants and definitions for the Rubik's Cube components. It defines the names, colors, and standard orderings for all the corner and edge pieces.
-"""
-
-"""
 cubie.py
 --------
 Defines the fundamental data types for a cubie-level Rubik's Cube model.

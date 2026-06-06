@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This is the primary entry point for the project's terminal interface. It orchestrates user input, tying together the cube state, random scramblers, and the various solvers.
-"""
-
-"""
 main.py
 -------
 Command-line interface for the Rubik's Cube simulator project.
@@ -210,7 +205,7 @@ def cmd_train(args):
     from solvers.ai_solver import RubiksMLP, train_model
 
     print("\n" + "=" * 62)
-    print("  AI SOLVER — CURRICULUM TRAINING")
+    print("  AI SOLVER  -  CURRICULUM TRAINING")
     print("=" * 62)
     print(f"  Max depth       : {args.max_depth}")
     print(f"  Samples/depth   : {args.samples:,}")
@@ -268,7 +263,7 @@ def cmd_compare(args):
     from experiments.ai_vs_kociemba import run_comparison
 
     print("\n" + "=" * 62)
-    print("  KOCIEMBA vs AI SOLVER — COMPARISON")
+    print("  KOCIEMBA vs AI SOLVER  -  COMPARISON")
     print("=" * 62)
     print(f"  Test cubes per depth : {args.num_tests}")
     print(f"  Max scramble depth   : {args.max_depth}")
@@ -288,7 +283,7 @@ def cmd_compare(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Rubik's Cube Simulator — M.Sc. AI Thesis",
+        description="Rubik's Cube Simulator  -  M.Sc. AI Thesis",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

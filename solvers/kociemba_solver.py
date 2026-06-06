@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This module wraps the legendary Kociemba Algorithm. It acts as our 'perfect' solver and validation engine, guaranteeing a sub-20 move solution via a complex two-phase lookup table.
-"""
-
-"""
 kociemba_solver.py
 ------------------
 Rubik's Cube solver with two solving strategies:

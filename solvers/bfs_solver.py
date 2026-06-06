@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This script executes a Breadth-First Search (BFS). It brute-forces every possible move combination level-by-level to guarantee the absolute shortest possible path for very simple scrambles.
-"""
-
-"""
 kociemba_solver.py
 ------------------
 Pure Python Rubik's Cube solver using bidirectional BFS with

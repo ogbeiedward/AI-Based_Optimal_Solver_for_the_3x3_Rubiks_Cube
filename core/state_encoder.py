@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This utility handles converting the 3D cube's complex mathematical state into numerical formats (like One-Hot encoding) so that Neural Networks and AI models can understand it.
-"""
-
-"""
 state_encoder.py
 ----------------
 One-hot encoding of a Rubik's Cube state for neural network input.

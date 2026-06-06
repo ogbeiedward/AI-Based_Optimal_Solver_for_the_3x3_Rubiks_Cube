@@ -1,26 +1,24 @@
 """
 curriculum_experiments.py
 --------------------------
-Runs a series of training experiments at different model sizes and dataset sizes
-to generate the plots required for the MSc thesis.
+Ablation study comparing three model sizes trained with curriculum learning,
+from depth 1 up to depth 8.
 
-Experiments performed:
-  1. Small model  (~50k params)  trained on 50,000 samples  up to depth 5
-  2. Medium model (~100k params) trained on 100,000 samples up to depth 5
-  3. Large model  (~184k params) trained on 150,000 samples up to depth 5
+The central question here is: how much does model capacity and dataset size
+matter when you progressively increase the scramble difficulty?
 
-For each experiment the script records:
-  - Training loss per epoch (loss curve)
-  - Solve rate per curriculum depth (progression table)
-  - Final solve rates at each scramble depth (bar chart)
+For each configuration we record:
+  - Training loss per epoch (so you can see the drops at each depth transition)
+  - Solve rate at each curriculum depth (how well the model generalised)
+  - The maximum depth the model actually cleared the 80% threshold at
 
-All figures are saved to experiments/plots/.
+The curriculum rule is simple: once the model's solve rate on a fresh test set
+exceeds 80%, we trust it has learned that depth and move on to harder scrambles.
+If it never clears 80%, we stop there - that's the model's ceiling, not a bug.
 
 Usage:
-    python -m experiments.curriculum_experiments [--quick]
-
-    --quick  Use very small sample sizes for a fast smoke-test run
-             (not suitable for thesis-quality results).
+    python -m experiments.curriculum_experiments
+    python -m experiments.curriculum_experiments --quick   # fast smoke test
 """
 
 import argparse
@@ -33,26 +31,25 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')           # Headless – works without a display
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-from solvers.ai_solver import (
-    RubiksMLP, train_model, evaluate_solve_rate,
-)
+from solvers.ai_solver import train_model, evaluate_solve_rate
+
 
 # ---------------------------------------------------------------------------
-# Experiment configurations
+# Experiment configurations - three model sizes, progressively harder problem
 # ---------------------------------------------------------------------------
 
 EXPERIMENTS = [
     {
         "label": "Small (50k samples, ~50k params)",
         "short": "small",
-        "hidden": [128, 128],          # smaller hidden layers
-        "samples_per_depth": 10_000,   # total ≈ 50k across 5 depths
+        "hidden": [128, 128],
+        "samples_per_depth": 10_000,
         "epochs_per_depth": 30,
-        "color": "#ff8080",
+        "color": "#e05050",
     },
     {
         "label": "Medium (100k samples, ~100k params)",
@@ -60,15 +57,15 @@ EXPERIMENTS = [
         "hidden": [256, 128],
         "samples_per_depth": 20_000,
         "epochs_per_depth": 40,
-        "color": "#80ccff",
+        "color": "#3399dd",
     },
     {
         "label": "Large (150k samples, ~184k params)",
         "short": "large",
-        "hidden": [256, 256, 128],     # default architecture
+        "hidden": [256, 256, 128],
         "samples_per_depth": 30_000,
         "epochs_per_depth": 50,
-        "color": "#80ff90",
+        "color": "#33aa55",
     },
 ]
 
@@ -77,8 +74,8 @@ QUICK_OVERRIDE = {
     "epochs_per_depth": 5,
 }
 
-MAX_DEPTH = 5
-LOSS_THRESHOLD = 0.8          # validation-loss proxy: if solve rate > 80 % advance
+MAX_DEPTH = 8
+SOLVE_THRESHOLD = 0.80   # 80% solve rate = curriculum advances to next depth
 EVAL_TESTS = 50
 SEED = 42
 
@@ -86,11 +83,11 @@ PLOT_DIR = os.path.join(os.path.dirname(__file__), "plots")
 
 
 # ---------------------------------------------------------------------------
-# Custom MLP that accepts arbitrary hidden sizes
+# Flexible MLP for ablation (lets us swap in different hidden-layer sizes)
 # ---------------------------------------------------------------------------
 
 class FlexMLP(torch.nn.Module):
-    """MLP with configurable hidden layer sizes for ablation experiments."""
+    """MLP with configurable hidden layer sizes."""
 
     def __init__(self, hidden_sizes):
         super().__init__()
@@ -145,7 +142,7 @@ def run_experiment(cfg, quick=False, device=None):
         max_depth=MAX_DEPTH,
         samples_per_depth=samples,
         epochs_per_depth=epochs,
-        solve_threshold=LOSS_THRESHOLD,
+        solve_threshold=SOLVE_THRESHOLD,
         batch_size=64,
         learning_rate=1e-3,
         seed=SEED,
@@ -153,7 +150,7 @@ def run_experiment(cfg, quick=False, device=None):
         device=device,
     )
 
-    # Evaluate final solve rates per depth
+    # After training, measure the final solve rate at every depth
     final_solve_rates = {}
     for depth in range(1, MAX_DEPTH + 1):
         rate = evaluate_solve_rate(model, depth, num_tests=EVAL_TESTS, seed=SEED + depth, device=device)
@@ -178,71 +175,63 @@ def run_experiment(cfg, quick=False, device=None):
 
 def make_plots(results):
     os.makedirs(PLOT_DIR, exist_ok=True)
-
-    _style()
-
-    # 1. Loss curves per model
+    _apply_style()
     _plot_loss_curves(results)
-
-    # 2. Solve-rate bars per depth, grouped by model
     _plot_solve_rate_bars(results)
-
-    # 3. Curriculum progression (depth reached vs model)
     _plot_curriculum_progression(results)
-
-    # 4. Combined overview figure (for thesis)
     _plot_combined(results)
-
     print(f"\nAll plots saved to: {PLOT_DIR}")
 
 
-def _style():
+def _apply_style():
     plt.rcParams.update({
-        'figure.facecolor': '#0d0d1a',
-        'axes.facecolor':   '#13132a',
-        'axes.edgecolor':   '#404060',
-        'axes.labelcolor':  '#c0c0e0',
-        'xtick.color':      '#a0a0c0',
-        'ytick.color':      '#a0a0c0',
-        'text.color':       '#e0e0ff',
-        'grid.color':       '#252540',
+        'figure.facecolor': '#ffffff',
+        'axes.facecolor':   '#f8f9fa',
+        'axes.edgecolor':   '#cccccc',
+        'axes.labelcolor':  '#222222',
+        'xtick.color':      '#444444',
+        'ytick.color':      '#444444',
+        'text.color':       '#222222',
+        'grid.color':       '#e0e0e0',
         'grid.linestyle':   '--',
-        'grid.alpha':       0.6,
-        'legend.facecolor': '#1a1a30',
-        'legend.edgecolor': '#404060',
+        'grid.alpha':       0.7,
+        'legend.facecolor': '#ffffff',
+        'legend.edgecolor': '#cccccc',
         'font.family':      'DejaVu Sans',
         'font.size':        10,
     })
 
 
 def _plot_loss_curves(results):
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.set_title("Training Loss Curves — Model Size Comparison", fontsize=13, pad=12)
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.set_title("Training Loss Curves - Model Size Comparison", fontsize=13, pad=12)
     ax.set_xlabel("Training Epoch (cumulative across curriculum depths)")
     ax.set_ylabel("Cross-Entropy Loss")
     ax.grid(True)
 
     for r in results:
         losses = r["loss_history"]
-        epochs = list(range(1, len(losses) + 1))
-        ax.plot(epochs, losses, label=r["label"], color=r["color"], linewidth=1.8)
+        ax.plot(range(1, len(losses) + 1), losses,
+                label=r["label"], color=r["color"], linewidth=2)
 
-        # Mark depth transitions
-        epochs_per_d = len(losses) // MAX_DEPTH
-        for d in range(1, MAX_DEPTH):
+        # Mark where curriculum advanced to a new depth
+        n_depths = len(r["depth_results"])
+        epochs_per_d = len(losses) // max(n_depths, 1)
+        for d in range(1, n_depths):
             x = d * epochs_per_d
             if x < len(losses):
-                ax.axvline(x=x, color=r["color"], alpha=0.25, linestyle=':')
+                ax.axvline(x=x, color=r["color"], alpha=0.2, linestyle=':')
 
-    # Depth boundary annotations
+    # Annotate depth transitions using the first model as reference
     if results:
         l = results[0]["loss_history"]
-        epochs_per_d = len(l) // MAX_DEPTH
-        for d in range(1, MAX_DEPTH):
+        n_depths = len(results[0]["depth_results"])
+        epochs_per_d = len(l) // max(n_depths, 1)
+        for d in range(1, n_depths):
             x = d * epochs_per_d
             if x < len(l):
-                ax.text(x + 0.5, ax.get_ylim()[1] * 0.95,
-                        f"Depth {d+1}", fontsize=7, color='#888899', rotation=90, va='top')
+                ax.text(x + 0.5, ax.get_ylim()[1] * 0.93,
+                        f"Depth {d+1}", fontsize=7, color='#888888', rotation=90, va='top')
 
     ax.legend(loc='upper right')
     fig.tight_layout()
@@ -255,15 +244,15 @@ def _plot_loss_curves(results):
 def _plot_solve_rate_bars(results):
     depths = list(range(1, MAX_DEPTH + 1))
     n_models = len(results)
-    width = 0.25
+    width = 0.22
     offsets = np.linspace(-(n_models - 1) * width / 2, (n_models - 1) * width / 2, n_models)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(12, 5))
     ax.set_title("Final Solve Rate by Scramble Depth and Model Size", fontsize=13, pad=12)
-    ax.set_xlabel("Scramble Depth")
+    ax.set_xlabel("Scramble Depth (number of random moves from solved)")
     ax.set_ylabel("Solve Rate (%)")
     ax.set_xticks(depths)
-    ax.set_ylim(0, 105)
+    ax.set_ylim(0, 108)
     ax.grid(True, axis='y')
 
     for i, r in enumerate(results):
@@ -273,15 +262,16 @@ def _plot_solve_rate_bars(results):
             rates,
             width=width,
             color=r["color"],
-            alpha=0.85,
+            alpha=0.82,
             label=r["label"],
         )
         for bar, rate in zip(bars, rates):
-            if rate > 0:
+            if rate > 2:
                 ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 1,
                         f"{rate:.0f}%", ha='center', va='bottom', fontsize=7)
 
-    ax.axhline(y=80, color='#ffcc44', linestyle='--', linewidth=1, alpha=0.7, label='80% threshold')
+    ax.axhline(y=80, color='#cc7700', linestyle='--', linewidth=1.2, alpha=0.8,
+               label='80% threshold (curriculum gate)')
     ax.legend(loc='upper right', fontsize=8)
     fig.tight_layout()
     path = os.path.join(PLOT_DIR, "solve_rate_bars.png")
@@ -291,8 +281,12 @@ def _plot_solve_rate_bars(results):
 
 
 def _plot_curriculum_progression(results):
-    fig, ax = plt.subplots(figsize=(10, 5))
-    ax.set_title("Curriculum Learning: Depth Reached per Model\n(stops when model cannot pass 80% solve rate threshold)", fontsize=12, pad=12)
+    fig, ax = plt.subplots(figsize=(9, 5))
+    ax.set_title(
+        "Curriculum Learning - Maximum Depth Cleared per Model\n"
+        "(curriculum stops when solve rate stays below 80%)",
+        fontsize=11, pad=12
+    )
     ax.set_xlabel("Model Configuration")
     ax.set_ylabel("Maximum Curriculum Depth Reached")
     ax.set_ylim(0, MAX_DEPTH + 1)
@@ -302,7 +296,7 @@ def _plot_curriculum_progression(results):
     labels = [r["short"].capitalize() for r in results]
     depths_reached = []
     for r in results:
-        d = max((dr["depth"] for dr in r["depth_results"] if dr["solve_rate"] >= LOSS_THRESHOLD), default=0)
+        d = max((dr["depth"] for dr in r["depth_results"] if dr["solve_rate"] >= SOLVE_THRESHOLD), default=0)
         depths_reached.append(d)
 
     bars = ax.bar(labels, depths_reached, color=[r["color"] for r in results], alpha=0.85, width=0.4)
@@ -310,7 +304,8 @@ def _plot_curriculum_progression(results):
         ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.05,
                 f"Depth {d}", ha='center', va='bottom', fontsize=10, fontweight='bold')
 
-    ax.axhline(y=MAX_DEPTH, color='#ff6060', linestyle='--', linewidth=1, alpha=0.7, label=f'Max depth = {MAX_DEPTH}')
+    ax.axhline(y=MAX_DEPTH, color='#cc3333', linestyle='--', linewidth=1.2, alpha=0.7,
+               label=f'Max depth = {MAX_DEPTH}')
     ax.legend()
     fig.tight_layout()
     path = os.path.join(PLOT_DIR, "curriculum_progression.png")
@@ -320,27 +315,25 @@ def _plot_curriculum_progression(results):
 
 
 def _plot_combined(results):
-    """Single combined figure for the thesis (loss + solve rates side by side)."""
+    """Combined figure for the thesis: loss curves + solve rates side by side."""
     fig = plt.figure(figsize=(16, 6))
     fig.suptitle(
-        "Curriculum Learning Ablation: Effect of Model Size and Dataset Size\n"
-        "MSc Thesis — AI-Based Optimal Solver for the 3×3 Rubik's Cube — Edward Ogbei",
+        "Curriculum Learning Ablation - Effect of Model Size and Dataset Size\n"
+        "MSc Thesis - AI-Based Optimal Solver for the 3x3 Rubik's Cube - Edward Ogbei",
         fontsize=12, y=1.01,
     )
 
     gs = gridspec.GridSpec(1, 2, figure=fig, wspace=0.35)
 
-    # Left: loss curves
     ax_loss = fig.add_subplot(gs[0, 0])
     ax_loss.set_title("Training Loss Curves", fontsize=11)
     ax_loss.set_xlabel("Cumulative Training Epoch")
     ax_loss.set_ylabel("Cross-Entropy Loss")
     ax_loss.grid(True)
     for r in results:
-        ax_loss.plot(r["loss_history"], label=r["label"], color=r["color"], linewidth=1.6)
+        ax_loss.plot(r["loss_history"], label=r["label"], color=r["color"], linewidth=1.8)
     ax_loss.legend(fontsize=7, loc='upper right')
 
-    # Right: solve-rate bars
     ax_bars = fig.add_subplot(gs[0, 1])
     ax_bars.set_title("Final Solve Rate per Scramble Depth", fontsize=11)
     ax_bars.set_xlabel("Scramble Depth")
@@ -350,13 +343,14 @@ def _plot_combined(results):
 
     depths = list(range(1, MAX_DEPTH + 1))
     n = len(results)
-    width = 0.25
+    width = 0.22
     offsets = np.linspace(-(n - 1) * width / 2, (n - 1) * width / 2, n)
     for i, r in enumerate(results):
         rates = [r["final_solve_rates"].get(d, 0) * 100 for d in depths]
         ax_bars.bar([d + offsets[i] for d in depths], rates, width=width,
-                    color=r["color"], alpha=0.85, label=r["label"])
-    ax_bars.axhline(y=80, color='#ffcc44', linestyle='--', linewidth=1, alpha=0.7, label='80% threshold')
+                    color=r["color"], alpha=0.82, label=r["label"])
+    ax_bars.axhline(y=80, color='#cc7700', linestyle='--', linewidth=1.2, alpha=0.8,
+                    label='80% threshold')
     ax_bars.set_xticks(depths)
     ax_bars.legend(fontsize=7, loc='upper right')
 
@@ -368,7 +362,7 @@ def _plot_combined(results):
 
 
 # ---------------------------------------------------------------------------
-# Save raw results to JSON (for reproducibility / thesis appendix)
+# Save raw results to JSON
 # ---------------------------------------------------------------------------
 
 def save_results_json(results):
@@ -400,14 +394,14 @@ def save_results_json(results):
 def main():
     parser = argparse.ArgumentParser(description="Curriculum learning ablation experiments")
     parser.add_argument("--quick", action="store_true",
-                        help="Use tiny samples/epochs for a fast smoke-test")
+                        help="Tiny sample/epoch counts for a fast smoke test")
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
     if str(device) == "cpu":
-        print("Note: running on CPU. Full experiments may take 30-90 minutes.")
-        print("      Use --quick for a 2-minute smoke test.")
+        print("Running on CPU. Full experiments may take 30-90 minutes.")
+        print("Use --quick for a 2-minute smoke test.")
 
     all_results = []
     for cfg in EXPERIMENTS:
@@ -423,7 +417,7 @@ def main():
     print("-" * 80)
     for r in all_results:
         dr = r["depth_results"]
-        reached = max((d["depth"] for d in dr if d["solve_rate"] >= LOSS_THRESHOLD), default=0)
+        reached = max((d["depth"] for d in dr if d["solve_rate"] >= SOLVE_THRESHOLD), default=0)
         print(f"{r['label']:<45} {r['n_params']:>8,} {r['samples_per_depth']:>10,} {reached:>14}")
 
 

@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This is the core Rubik's Cube state engine. It mathematically tracks the permutation and orientation of every corner and edge piece (cp, co, ep, eo) and enforces the strict geometric rules that define a legal 3x3 cube.
-"""
-
-"""
 cube.py
 -------
 CubieCube class: the main data structure for a 3x3 Rubik's Cube at cubie level.

@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This script runs massive batches of scrambles through the Kociemba solver to gather statistical data on solve speeds and average move counts.
-"""
-
-"""
 kociemba_benchmark.py
 ---------------------
 Benchmark the Kociemba two-phase algorithm on random scrambles.

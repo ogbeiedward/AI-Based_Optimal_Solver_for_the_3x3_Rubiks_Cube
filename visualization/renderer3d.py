@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This script handles drawing the Python-based matplotlib 3D visualizer, calculating coordinates and colors for a very basic rigid geometric rendering.
-"""
-
-"""
 renderer3d.py
 -------------
 Matplotlib-based 3D renderer for the Rubik's Cube using Poly3DCollection.

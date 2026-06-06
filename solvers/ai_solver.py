@@ -1,28 +1,30 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file contains the custom Artificial Intelligence (Neural Network/Search) model designed to heuristically find solutions to the Rubik's cube, representing the core thesis of the project.
-"""
-
-"""
 ai_solver.py
 ------------
-Supervised learning solver for the 3x3 Rubik's Cube.
+Supervised learning solver for the 3x3 Rubik's Cube using a small MLP.
+
+The model takes a one-hot encoded cube state (324 inputs) and predicts the
+next move that Kociemba would make toward the solution (18-class output).
 
 Architecture:
-  MLP with approximately 50k parameters:
-    Input:  324 (54 facelets * 6 colors, one-hot encoded)
-    Dense:  256 units, ReLU
-    Dense:  256 units, ReLU
-    Dense:  128 units, ReLU
-    Output: 18  units, Softmax (one per move)
+  Input:  324  (54 facelets x 6 colors, one-hot encoded)
+  Dense:  256  (ReLU)
+  Dense:  256  (ReLU)
+  Dense:  128  (ReLU)
+  Output: 18   (raw logits; softmax applied at inference)
 
-Training strategy:
-  1. Expert Cloning: generate scrambles, solve with Kociemba,
-     train the model to predict the next move at each step.
-  2. Curriculum Learning: train progressively from depth 1 to depth 5,
-     only increasing depth when solve rate exceeds a threshold.
+  Total parameters: ~184k
 
-The model can solve scrambles up to depth 5 reliably.
+Training uses curriculum learning: we start with 1-move scrambles and
+gradually increase the difficulty. The key rule is that we only advance
+to the next depth once the model's solve rate on a fresh validation set
+exceeds a threshold (default 80%). If it can't reach the threshold, we
+stop - that tells us the model is too small for that level of difficulty,
+and you'd need more parameters (or more data) to go further.
+
+At inference we support two search strategies:
+  - Greedy: pick the highest-confidence move at each step
+  - Beam search: maintain the top-k paths and explore alternatives
 """
 
 import time
@@ -197,7 +199,7 @@ def generate_training_data(num_samples, max_depth, seed=None):
 
 def train_model(
     model,
-    max_depth=5,
+    max_depth=8,
     samples_per_depth=1000,
     epochs_per_depth=50,
     solve_threshold=0.8,
@@ -208,28 +210,33 @@ def train_model(
     device=None,
 ):
     """
-    Train the model using curriculum learning.
+    Train the model with curriculum learning.
 
-    Training proceeds from depth 1 to max_depth. At each depth level:
-      1. Generate training data for scrambles up to that depth.
-      2. Train the model for the specified number of epochs.
-      3. Evaluate solve rate on a test set.
-      4. Only proceed to the next depth if solve rate > threshold.
+    We start from depth 1 (just one random move) and work our way up.
+    After each depth, we test the model on 100 fresh scrambles. If it
+    solves at least `solve_threshold` of them (default 80%), it has
+    learned that level and we move on to harder scrambles. If not, we
+    stop - this is the natural ceiling for this model/dataset combination.
+
+    This threshold-based advancement is important: it means the curriculum
+    progresses because the model has actually learned, not just because we
+    waited a fixed number of epochs. A small model that can't reach 80% at
+    depth 4 is telling you something real about its capacity limits.
 
     Args:
-        model: RubiksMLP instance.
-        max_depth: maximum scramble depth to train on (default 5).
-        samples_per_depth: number of scramble samples per depth level.
-        epochs_per_depth: training epochs per depth level.
-        solve_threshold: minimum solve rate to advance to next depth.
-        batch_size: training batch size.
-        learning_rate: optimizer learning rate.
+        model: RubiksMLP (or FlexMLP) instance.
+        max_depth: how deep to push the curriculum (default 8).
+        samples_per_depth: how many scrambles to generate at each level.
+        epochs_per_depth: training epochs at each level.
+        solve_threshold: fraction correct required to advance (default 0.8).
+        batch_size: mini-batch size.
+        learning_rate: Adam learning rate.
         seed: optional RNG seed for reproducibility.
-        verbose: print training progress.
+        verbose: whether to print progress.
         device: torch device (auto-detected if None).
 
     Returns:
-        dict with training history.
+        dict with keys 'loss_history' and 'depth_results'.
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -305,13 +312,15 @@ def train_model(
         history["depth_results"].append(depth_result)
 
         if verbose:
-            print(f"  Solve rate at depth {depth}: {solve_rate:.1%}")
+            status = "OK - advancing" if solve_rate >= solve_threshold else "below threshold - stopping"
+            print(f"  Solve rate at depth {depth}: {solve_rate:.1%}  [{status}]")
 
         if solve_rate < solve_threshold and depth < max_depth:
             if verbose:
                 print(
-                    f"  Solve rate {solve_rate:.1%} < threshold {solve_threshold:.1%}. "
-                    f"Stopping curriculum at depth {depth}."
+                    f"\n  This model could not clear the {solve_threshold:.0%} solve-rate threshold "
+                    f"at depth {depth}. Curriculum stops here.\n"
+                    f"  To go deeper: increase model size, samples, or epochs."
                 )
             break
 

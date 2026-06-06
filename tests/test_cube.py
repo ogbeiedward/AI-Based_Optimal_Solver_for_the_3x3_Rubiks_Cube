@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-This file contains automated unit tests that ruthlessly verify the cube's core mechanics to ensure that permutations, orientations, and parity checks are working flawlessly.
-"""
-
-"""
 test_cube.py
 ------------
 Unit tests for the cubie-level Rubik's Cube simulator.

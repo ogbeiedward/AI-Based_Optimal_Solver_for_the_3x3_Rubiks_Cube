@@ -1,9 +1,4 @@
 """
-HUMAN-READABLE DESCRIPTION:
-These unit tests validate the state_encoder, ensuring that the cube's physical state translates perfectly into the dense neural-network compatible tensors.
-"""
-
-"""
 test_encoder.py
 ---------------
 Unit tests for the state encoder module.
