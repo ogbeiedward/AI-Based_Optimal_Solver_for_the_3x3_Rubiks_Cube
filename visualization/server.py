@@ -217,10 +217,26 @@ class CubeHandler(SimpleHTTPRequestHandler):
                 return
 
             import statistics
-            tests_per_depth = 5
+            import json as json_lib
+
+            # Get parameters from request body (if POST)
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                if content_length > 0:
+                    body = self.rfile.read(content_length).decode('utf-8')
+                    params = json_lib.loads(body) if body else {}
+                else:
+                    params = {}
+            except:
+                params = {}
+
+            # Get max_depth and tests_per_depth from params, or use defaults
+            max_depth = min(int(params.get('max_depth', 8)), 10)  # cap at depth 10
+            tests_per_depth = min(int(params.get('tests_per_depth', 5)), 50)  # cap at 50 tests
+
             benchmark_results = []
 
-            for depth in range(1, 9):  # test depths 1-8
+            for depth in range(1, max_depth + 1):  # test up to max_depth
                 koc_solved = 0; koc_times = []
                 g_solved   = 0; g_times   = []
                 b5_solved  = 0; b5_times  = []

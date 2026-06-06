@@ -391,6 +391,29 @@
 
             <div id="benchmark-section" class="section" style="display: none;">
                 <h2>Benchmark <span class="tag tag-koc">Kociemba</span> <span class="tag tag-ai">Greedy</span> <span class="tag tag-ai">Beam</span></h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <div>
+                        <label style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Max Depth:</label>
+                        <select id="benchmark-max-depth" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px;">
+                            <option value="5">Depth 1-5</option>
+                            <option value="6">Depth 1-6</option>
+                            <option value="7">Depth 1-7</option>
+                            <option value="8" selected>Depth 1-8</option>
+                            <option value="9">Depth 1-9</option>
+                            <option value="10">Depth 1-10</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Tests/Depth:</label>
+                        <select id="benchmark-tests-per-depth" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px;">
+                            <option value="3">3 tests</option>
+                            <option value="5" selected>5 tests</option>
+                            <option value="10">10 tests</option>
+                            <option value="20">20 tests</option>
+                            <option value="50">50 tests</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="benchmark-output"></div>
             </div>
         </div>
@@ -795,10 +818,20 @@
             const output = document.getElementById('benchmark-output');
             const section = document.getElementById('benchmark-section');
             section.style.display = 'block';
-            output.innerHTML = '<div style="color:#374151; padding:10px; text-align:center; font-size:12px;">Running 40 tests (depths 1-8)... please wait.</div>';
+
+            // Get user-selected parameters
+            const maxDepth = parseInt(document.getElementById('benchmark-max-depth').value) || 8;
+            const testsPerDepth = parseInt(document.getElementById('benchmark-tests-per-depth').value) || 5;
+            const totalTests = maxDepth * testsPerDepth;
+
+            output.innerHTML = `<div style="color:#374151; padding:10px; text-align:center; font-size:12px;">Running ${totalTests} tests (depths 1-${maxDepth}, ${testsPerDepth} per depth)... please wait.</div>`;
 
             try {
-                const res = await fetch('/compare_benchmark', { method: 'POST' });
+                const res = await fetch('/compare_benchmark', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ max_depth: maxDepth, tests_per_depth: testsPerDepth })
+                });
                 const data = await res.json();
 
                 if (data.status === 'ok') {
