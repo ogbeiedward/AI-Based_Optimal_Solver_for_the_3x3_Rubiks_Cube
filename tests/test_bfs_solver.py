@@ -1,7 +1,7 @@
 """
-test_kociemba.py
-----------------
-Unit tests for the IDA* solver (pure Python Kociemba replacement).
+test_bfs_solver.py
+------------------
+Unit tests for the bidirectional BFS solver.
 """
 
 import sys
@@ -15,7 +15,7 @@ from solvers.kociemba_solver import solve_with_kociemba
 
 
 class TestSolver:
-    """Tests for the IDA* solver."""
+    """Tests for the bidirectional BFS solver."""
 
     def test_solve_single_scramble(self):
         """Solve a short scramble and check the result."""

@@ -9,7 +9,7 @@ nosetests.xml
 reproduce.pickle
 
 # Data & Models
-data/datasets/*.npz
+# data/datasets/*.npz  # Datasets are included for reproducibility
 !data/datasets/.gitkeep
 # data/models/*.pt  # Uncomment if you want to exclude all models
 # !data/models/ai_solver.pt # Specifically track the main model if desired

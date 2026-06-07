@@ -1,21 +1,27 @@
 """
 kociemba_solver.py
 ------------------
-Rubik's Cube solver with two solving strategies:
+IMPLEMENTATION NOTE: This module implements BIDIRECTIONAL BFS, not Kociemba's
+two-phase algorithm. The function name solve_with_kociemba() is a historical
+convention kept for API compatibility, but the underlying algorithm is:
+
+  - Bidirectional breadth-first search with 18-move set
+  - Expands smaller frontier at each level
+  - Effective for states up to ~8 moves from solved
+  - NOT Kociemba's pattern-database two-phase approach (phase 1 -> G1, phase 2)
+
+Two solving strategies:
 
 1. **History-based solver**: When move history is available (e.g., from the
    interactive viewer), reverses the move sequence for an instant solution.
    This is the primary solving method as it's guaranteed to work and is O(n).
 
-2. **BFS solver**: For arbitrary states without history, uses bidirectional
-   BFS with 18-move set on tuple states. Effective for states up to ~8 moves
-   from solved.
+2. **Bidirectional BFS solver**: For arbitrary states without history, uses
+   bidirectional BFS with 18-move set on tuple states. Effective for states
+   up to ~8 moves from solved.
 
-Both methods use standard Kociemba-compatible move notation (U, U', U2, etc.)
-and validate solutions by applying them to verify is_solved().
-
-The solve_with_kociemba() API is the public interface, compatible with the
-rest of the project (experiments, UI controls, etc.)
+Both methods use standard move notation (U, U', U2, etc.) and validate
+solutions by applying them to verify is_solved().
 """
 
 import time

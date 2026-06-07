@@ -1,7 +1,10 @@
 """
 ai_vs_kociemba.py
 -----------------
-Comparative evaluation of the AI solver vs the Kociemba two-phase solver.
+Comparative evaluation of the AI solver vs the bidirectional BFS solver.
+
+Note: The solver labeled 'Kociemba' throughout this project is bidirectional BFS,
+not the true Kociemba two-phase algorithm.
 
 Compares across scramble depths 1 to 5:
   - Solve rate
